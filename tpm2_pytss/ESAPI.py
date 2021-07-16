@@ -184,9 +184,9 @@ class ESAPI:
 
         Args:
             handle (TPM2_HANDLE): The handle of the TPM object to represent as ESYS_TR.
-            session1 (ESYS_TR): A session for securing the TPM command (optional).
-            session2 (ESYS_TR): A session for securing the TPM command (optional).
-            session3 (ESYS_TR): A session for securing the TPM command (optional).
+            session1 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+            session2 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+            session3 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
 
         Returns:
             A tuple of (TPM2B_ID_OBJECT, TPM2B_ENCRYPTED_SECRET)
@@ -230,7 +230,10 @@ class ESAPI:
 
         Raises:
             TypeError: If a parameter is not of an expected type.
+            ValueError: If a parameter is not of an expected value.
             TSS2_Exception: Any of the various TSS2_RC's the lower layers can return.
+
+        C Function: Esys_TR_SetAuth
         """
 
         _check_handle_type(esys_handle, "esys_handle")
@@ -242,15 +245,51 @@ class ESAPI:
         _chkrc(lib.Esys_TR_SetAuth(self._ctx, esys_handle, auth_cdata))
 
     def tr_get_name(self, handle: ESYS_TR) -> TPM2B_NAME:
+        """Retrieve the TPM public name of an Esys_TR object.
 
+        Some operations (i.e. Esys_PolicyNameHash) require the name of a TPM object
+        to be passed. Esys_TR_GetName provides this name to the caller.
+
+        Args:
+            esys_handle(ESYS_TR): The ESYS_TR for which to get the name value.
+
+        Returns:
+            A TPM2B_NAME containing the name of the object referenced in the esys_handle.
+
+        Raises:
+            TypeError: If a parameter is not of an expected type.
+            TSS2_Exception: Any of the various TSS2_RC's the lower layers can return.
+
+        C Function: Esys_TR_GetName
+        """
         _check_handle_type(handle, "handle")
 
         name = ffi.new("TPM2B_NAME **")
         _chkrc(lib.Esys_TR_GetName(self._ctx, handle, name))
         return TPM2B_NAME(_cdata=get_dptr(name, lib.Esys_Free))
 
-    def startup(self, startup_type: TPM2_SU):
+    def startup(self, startup_type: TPM2_SU) -> None:
+        """Invoke the TPM2_Startup command.
 
+        This function invokes the TPM2_Startup command in a one-call
+        variant. This means the function will block until the TPM response is
+        available.
+
+        Args:
+            shutdown_type(TPM2_SU): TPM2_SU_CLEAR or TPM2_SU_STATE.
+            session1 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+            session2 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+            session3 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+
+        Raises:
+            TypeError: If a parameter is not of an expected type.
+            ValueError: If a parameter is not of an expected value.
+            TSS2_Exception: Any of the various TSS2_RC's the lower layers can return.
+
+        C Function: Esys_Startup
+
+        TPM Command: TPM2_Startup
+        """
         check_friendly_int(startup_type, "startup_type", TPM2_SU)
 
         _chkrc(lib.Esys_Startup(self._ctx, startup_type))
@@ -261,7 +300,28 @@ class ESAPI:
         session1: ESYS_TR = ESYS_TR.NONE,
         session2: ESYS_TR = ESYS_TR.NONE,
         session3: ESYS_TR = ESYS_TR.NONE,
-    ):
+    ) -> None:
+        """Invoke the TPM2_Shutdown command.
+
+        This function invokes the TPM2_Shutdown command in a one-call
+        variant. This means the function will block until the TPM response is
+        available.
+
+        Args:
+            shutdown_type(TPM2_SU): TPM2_SU_CLEAR or TPM2_SU_STATE.
+            session1 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+            session2 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+            session3 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+
+        Raises:
+            TypeError: If a parameter is not of an expected type.
+            ValueError: If a parameter is not of an expected value.
+            TSS2_Exception: Any of the various TSS2_RC's the lower layers can return.
+
+        C Function: Esys_Shutdown
+
+        TPM Command: TPM2_Shutdown
+        """
 
         check_friendly_int(shutdown_type, "shutdown_type", TPM2_SU)
 
@@ -279,7 +339,27 @@ class ESAPI:
         session1: ESYS_TR = ESYS_TR.NONE,
         session2: ESYS_TR = ESYS_TR.NONE,
         session3: ESYS_TR = ESYS_TR.NONE,
-    ):
+    ) -> None:
+        """Invoke the TPM2_SelfTest command.
+
+        This function invokes the TPM2_SelfTest command in a one-call
+        variant. This means the function will block until the TPM response is
+        available
+
+        Args:
+            full_test(bool): True to run a full test. False to run tests that have yet to be executed.
+            session1 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+            session2 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+            session3 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+
+        Raises:
+            TypeError: If a parameter is not of an expected type.
+            TSS2_Exception: Any of the various TSS2_RC's the lower layers can return.
+
+        C Function: Esys_SelfTest
+
+        TPM Command: TPM2_SelfTest
+        """
 
         if not isinstance(full_test, bool):
             raise TypeError(
@@ -295,6 +375,30 @@ class ESAPI:
         session2: ESYS_TR = ESYS_TR.NONE,
         session3: ESYS_TR = ESYS_TR.NONE,
     ) -> TPML_ALG:
+        """Invoke the TPM2_IncrementalSelfTest command.
+
+        This function invokes the TPM2_IncrementalSelfTest command in a one-call
+        variant. This means the function will block until the TPM response is
+        available
+
+        Args:
+            to_test(TPML_ALG): List of algorithms that should be tested.
+            session1 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+            session2 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+            session3 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+
+        Raises:
+            TypeError: If a parameter is not of an expected type.
+            ValueError: If a parameter is not of an expected value.
+            TSS2_Exception: Any of the various TSS2_RC's the lower layers can return.
+
+        Returns:
+            A TPML_ALG list of of algorithms that need testing; the todo list.
+
+        C Function: Esys_IncrementalSelfTest
+
+        TPM Command: TPM2_IncrementalSelfTest
+        """
 
         _check_handle_type(session1, "session1")
         _check_handle_type(session2, "session2")
@@ -315,8 +419,29 @@ class ESAPI:
         session1: ESYS_TR = ESYS_TR.NONE,
         session2: ESYS_TR = ESYS_TR.NONE,
         session3: ESYS_TR = ESYS_TR.NONE,
-    ):
+    ) -> Tuple[TPM2B_MAX_BUFFER, TPM2_RC]:
+        """Invoke the TPM2_GetTestResult command.
 
+        This function invokes the TPM2_GetTestResult command in a one-call
+        variant. This means the function will block until the TPM response is
+        available
+
+        Args:
+            session1 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+            session2 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+            session3 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+
+        Raises:
+            TypeError: If a parameter is not of an expected type.
+            TSS2_Exception: Any of the various TSS2_RC's the lower layers can return.
+
+        Returns:
+            A Tuple[TPM2B_MAX_BUFFER, TPM2_RC] the test result data and the return code from the test execution.
+
+        C Function: Esys_GetTestResult
+
+        TPM Command: TPM2_GetTestResult
+        """
         _check_handle_type(session1, "session1")
         _check_handle_type(session2, "session2")
         _check_handle_type(session3, "session3")
@@ -337,14 +462,44 @@ class ESAPI:
         self,
         tpm_key: ESYS_TR,
         bind: ESYS_TR,
-        nonce_caller: Union[TPM2B_NONCE, None],
+        nonce_caller: Union[TPM2B_NONCE, bytes, str, None],
         session_type: TPM2_SE,
         symmetric: TPMT_SYM_DEF,
         auth_hash: TPM2_ALG,
         session1: ESYS_TR = ESYS_TR.NONE,
         session2: ESYS_TR = ESYS_TR.NONE,
         session3: ESYS_TR = ESYS_TR.NONE,
-    ):
+    ) -> ESYS_TR:
+        """Invoke the TPM2_StartAuthSession command.
+
+        This function invokes the TPM2_StartAuthSession command in a one-call
+        variant. This means the function will block until the TPM response is
+        available
+
+        Args:
+            tpm_key (ESYS_TR): Handle of a loaded decrypt key used to encrypt salt.
+            bind (ESYS_TR): Entity providing the authValue.
+            nonce_caller (Union[TPM2B_NONCE, bytes, str, None]): Initial nonceCaller, sets nonceTPM size for the
+                session. Can be None to have ESAPI generate it for the caller.
+            session_type (TPM2_SE): Indicates the type of the session; simple HMAC or policy (including a trial policy).
+            symmetric (TPMT_SYM_DEF): The algorithm and key size for parameter encryption.
+            auth_hash (TPM2_ALG): Hash algorithm to use for the session.
+            session1 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+            session2 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+            session3 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+
+        Raises:
+            TypeError: If a parameter is not of an expected type.
+            ValueError: If a parameter is not of an expected value.
+            TSS2_Exception: Any of the various TSS2_RC's the lower layers can return.
+
+        Returns:
+            An ESYS_TR which is the handle of the started session.
+
+        C Function: Esys_StartAuthSession
+
+        TPM Command: TPM2_StartAuthSession
+        """
 
         _check_handle_type(tpm_key, "tpm_key")
         _check_handle_type(bind, "bind")
@@ -381,8 +536,24 @@ class ESAPI:
 
     def trsess_set_attributes(
         self, session: ESYS_TR, attributes: int, mask: int = 0xFF
-    ):
+    ) -> None:
+        """Set session attributes.
 
+        Set or unset a session's attributes according to the provided flags and mask.
+        ``new_attributes = old_attributes & ~mask | flags & mask``
+        Note: this function only applies to ESYS_TR objects that represent sessions.
+
+        Args:
+            session (ESYS_TR): The session handle.
+            attributes(int): The attributes to be set or unset for the session.
+            mask(int): The mask for the flags to be set or unset. Defaults to 0xFF.
+
+        Raises:
+            TypeError: If a parameter is not of an expected type.
+            TSS2_Exception: Any of the various TSS2_RC's the lower layers can return.
+
+        C Function: Esys_TRSess_SetAttributes
+        """
         _check_handle_type(session, "session")
 
         if not isinstance(attributes, int):
@@ -396,7 +567,24 @@ class ESAPI:
         _chkrc(lib.Esys_TRSess_SetAttributes(self._ctx, session, attributes, mask))
 
     def trsess_get_nonce_tpm(self, session: ESYS_TR) -> TPM2B_NONCE:
+        """Retrieve the TPM nonce of an Esys_TR session object.
 
+         Some operations (i.e. Esys_PolicySigned) require the nonce returned by the
+         TPM during Esys_StartauthSession. This function provides this nonce to the
+         caller.
+
+        Args:
+            session (ESYS_TR): The session handle.
+
+        Returns:
+            The TPMB_NONCE representing the current session nonce.
+
+        Raises:
+            TypeError: If a parameter is not of an expected type.
+            TSS2_Exception: Any of the various TSS2_RC's the lower layers can return.
+
+        C Function: Esys_TRSess_SetAttributes
+        """
         _check_handle_type(session, "session")
 
         nonce = ffi.new("TPM2B_NONCE **")
@@ -411,7 +599,27 @@ class ESAPI:
         session1: ESYS_TR = ESYS_TR.NONE,
         session2: ESYS_TR = ESYS_TR.NONE,
         session3: ESYS_TR = ESYS_TR.NONE,
-    ):
+    ) -> None:
+        """Invoke the TPM2_PolicyRestart command.
+
+        This function invokes the TPM2_PolicyRestart command in a one-call
+        variant. This means the function will block until the TPM response is
+        available
+
+        Args:
+            session_handle(ESYS_TR): The handle for the policy session.
+            session1 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+            session2 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+            session3 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+
+        Raises:
+            TypeError: If a parameter is not of an expected type.
+            TSS2_Exception: Any of the various TSS2_RC's the lower layers can return.
+
+        C Function: Esys_PolicyRestart
+
+        TPM Command: TPM2_PolicyRestart
+        """
 
         _check_handle_type(session_handle, "session_handle")
         _check_handle_type(session1, "session1")
@@ -429,12 +637,44 @@ class ESAPI:
         parent_handle: ESYS_TR,
         in_sensitive: TPM2B_SENSITIVE_CREATE,
         in_public: Union[TPM2B_PUBLIC, str] = "rsa2048",
-        outside_info: TPM2B_DATA = TPM2B_DATA(),
-        creation_pcr: TPML_PCR_SELECTION = TPML_PCR_SELECTION(),
+        outside_info: Union[TPM2B_DATA, bytes, str] = TPM2B_DATA(),
+        creation_pcr: Union[TPML_PCR_SELECTION, str] = TPML_PCR_SELECTION(),
         session1: ESYS_TR = ESYS_TR.PASSWORD,
         session2: ESYS_TR = ESYS_TR.NONE,
         session3: ESYS_TR = ESYS_TR.NONE,
-    ):
+    ) -> Tuple[
+        TPM2B_PRIVATE, TPM2B_PUBLIC, TPM2B_CREATION_DATA, TPM2B_DIGEST, TPMT_TK_CREATION
+    ]:
+        """Invoke the TPM2_Create command.
+
+        This function invokes the TPM2_Create command in a one-call
+        variant. This means the function will block until the TPM response is
+        available
+
+        Args:
+            parent_handle (ESYS_TR): Handle of parent for new object.
+            in_sensitive (TPM2B_SENSITIVE_CREATE): The sensitive data.
+            in_public (Union[TPM2B_PUBLIC, str]): The public template. Defaults to an rsa2048 template.
+            outside_info (Union[TPM2B_DATA, bytes, str]):Data that will be included in the creation data for
+                this object to provide permanent, verifiable linkage between
+                this object and some object owner data. Defaults to empty TPM2B_DATA.
+            creation_pcr (Union[TPML_PCR_SELECTION, str]): PCR that will be used in creation data. Defaults to an empty PCR selection.
+            session1 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.PASSWORD.
+            session2 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+            session3 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+
+        Raises:
+            TypeError: If a parameter is not of an expected type.
+            ValueError: If a parameter is not of an expected value.
+            TSS2_Exception: Any of the various TSS2_RC's the lower layers can return.
+
+        Returns:
+            An Tuple[TPM2B_PRIVATE, TPM2B_PUBLIC, TPM2B_CREATION_DATA, TPM2B_DIGEST, TPMT_TK_CREATION].
+
+        C Function: Esys_Create
+
+        TPM Command: TPM2_Create
+        """
 
         _check_handle_type(parent_handle, "parent_handle")
         _check_handle_type(session1, "session1")
@@ -490,6 +730,33 @@ class ESAPI:
         session2: ESYS_TR = ESYS_TR.NONE,
         session3: ESYS_TR = ESYS_TR.NONE,
     ) -> ESYS_TR:
+        """Invoke the TPM2_Load command.
+
+        This function invokes the TPM2_Load command in a one-call
+        variant. This means the function will block until the TPM response is
+        available
+
+        Args:
+            parent_handle (ESYS_TR): parentHandle TPM handle of parent key; shall not be a reserved
+                handle.
+            in_private (TPM2B_PRIVATE): The private portion of the object.
+            in_public (TPM2B_PUBLIC): The public portion of the object.
+            session1 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.PASSWORD.
+            session2 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+            session3 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+
+        Raises:
+            TypeError: If a parameter is not of an expected type.
+            ValueError: If a parameter is not of an expected value.
+            TSS2_Exception: Any of the various TSS2_RC's the lower layers can return.
+
+        Returns:
+            An ESYS_TR representing the handle of the loaded object.
+
+        C Function: Esys_Load
+
+        TPM Command: TPM2_Load
+        """
 
         _check_handle_type(parent_handle, "parent_handle")
         _check_handle_type(session1, "session1")
@@ -524,6 +791,32 @@ class ESAPI:
         session2: ESYS_TR = ESYS_TR.NONE,
         session3: ESYS_TR = ESYS_TR.NONE,
     ) -> ESYS_TR:
+        """Invoke the TPM2_LoadExternal command.
+
+        This function invokes the TPM2_LoadExternal command in a one-call
+        variant. This means the function will block until the TPM response is
+        available
+
+        Args:
+            in_private (TPM2B_PRIVATE): The private portion of the object.
+            in_public (TPM2B_PUBLIC): The public portion of the object.
+            hierarchy (ESYS_TR): Hierarchy with which the object area is associated.
+            session1 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+            session2 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+            session3 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+
+        Raises:
+            TypeError: If a parameter is not of an expected type.
+            ValueError: If a parameter is not of an expected value.
+            TSS2_Exception: Any of the various TSS2_RC's the lower layers can return.
+
+        Returns:
+            An ESYS_TR representing the handle of the loaded object.
+
+        C Function: Esys_LoadExternal
+
+        TPM Command: TPM2_LoadExternal
+        """
 
         check_friendly_int(hierarchy, "hierarchy", ESYS_TR)
 
@@ -560,6 +853,33 @@ class ESAPI:
         session2: ESYS_TR = ESYS_TR.NONE,
         session3: ESYS_TR = ESYS_TR.NONE,
     ) -> Tuple[TPM2B_PUBLIC, TPM2B_NAME, TPM2B_NAME]:
+        """Invoke the TPM2_ReadPublic command.
+
+        This function invokes the TPM2_ReadPublic command in a one-call
+        variant. This means the function will block until the TPM response is
+        available
+
+        Args:
+            in_private (TPM2B_PRIVATE): The private portion of the object.
+            in_public (TPM2B_PUBLIC): The public portion of the object.
+            hierarchy (ESYS_TR): Hierarchy with which the object area is associated.
+            session1 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+            session2 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+            session3 (ESYS_TR): A session for securing the TPM command (optional). Defaults to ESYS_TR.NONE.
+
+        Raises:
+            TypeError: If a parameter is not of an expected type.
+            ValueError: If a parameter is not of an expected value.
+            TSS2_Exception: Any of the various TSS2_RC's the lower layers can return.
+
+        Returns:
+            A Tuple[TPM2B_PUBLIC, TPM2B_NAME, TPM2B_NAME] which is the public portion of the object, the name
+            and the qualified name respectively.
+
+        C Function: Esys_ReadPublic
+
+        TPM Command: TPM2_ReadPublic
+        """
 
         _check_handle_type(object_handle, "object_handle")
         _check_handle_type(session1, "session1")
